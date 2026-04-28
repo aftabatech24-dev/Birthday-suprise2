@@ -218,12 +218,14 @@
             btn.style.transform = `translate(${x}px, ${y}px)`;
         }
 
-        // MEMORY POPUP
-        function pop(icon, text) {
-            document.getElementById('modal-icon').innerText = icon;
+                // MEMORY POPUP FOR IMAGES
+        function pop(imageName, text) {
+            // This creates the HTML image tag dynamically
+            document.getElementById('modal-icon').innerHTML = `<img src="${imageName}" style="width: 100%; border-radius: 15px; border: 2px solid var(--gold);">`;
             document.getElementById('modal-text').innerText = text;
             document.getElementById('modal').style.display = 'flex';
         }
+
         function closePop() { document.getElementById('modal').style.display = 'none'; }
 
         // CAKE & CONFETTI
