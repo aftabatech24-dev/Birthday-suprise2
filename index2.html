@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Protocol 2.0 ✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #ff4d6d;
+            --secondary: #ffb3c1;
+            --dark: #590d22;
+            --glass: rgba(255, 255, 255, 0.85);
+            --gold: #d4af37;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #fff0f3 0%, #ffb3c1 50%, #e0cffc 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: var(--dark);
+        }
+
+        /* SCREEN MANAGEMENT */
+        .screen {
+            position: absolute;
+            width: 85%;
+            max-width: 400px;
+            padding: 30px;
+            background: var(--glass);
+            backdrop-filter: blur(15px);
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.5);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* REUSABLE UI */
+        h2 { font-family: 'Dancing Script', cursive; font-size: 32px; margin-bottom: 10px; }
+        input {
+            width: 80%; padding: 14px; border-radius: 15px; border: 2px solid var(--secondary);
+            margin-bottom: 15px; text-align: center; font-size: 16px;
+        }
+        button {
+            background: var(--primary); color: white; border: none; padding: 15px 30px;
+            border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%;
+            transition: 0.3s ease; box-shadow: 0 5px 15px rgba(255, 77, 109, 0.3);
+        }
+        button:active { transform: scale(0.95); }
+
+        /* PRANK BUTTON LOGIC */
+        .btn-group { position: relative; width: 100%; height: 120px; margin-top: 20px; }
+        #no-btn { 
+            position: absolute; width: 100px; background: #999; 
+            left: 50%; margin-left: 10px; transition: 0.2s ease;
+        }
+        #yes-btn { position: absolute; width: 120px; left: 50%; margin-left: -130px; }
+
+        /* MEMORY GRID */
+        .memory-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; width: 100%; }
+        .memory-item {
+            background: white; border: 1px solid var(--gold); border-radius: 15px;
+            height: 80px; display: flex; justify-content: center; align-items: center;
+            font-size: 28px; cursor: pointer; transition: 0.3s;
+        }
+        .memory-item:hover { transform: translateY(-5px); background: var(--secondary); }
+
+        /* MODAL POP-UP */
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); display: none; justify-content: center;
+            align-items: center; z-index: 1000;
+        }
+        .modal-content {
+            background: white; width: 80%; max-width: 400px; padding: 20px;
+            border-radius: 20px; text-align: center; position: relative;
+        }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-weight: bold; cursor: pointer; }
+
+        /* CAKE */
+        .cake-wrapper { position: relative; width: 200px; height: 150px; margin: 30px auto; cursor: pointer; }
+        .cake-half {
+            position: absolute; width: 50%; height: 100%; background: #ff85a1;
+            border: 3px solid #fff; transition: 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .left { left: 0; border-radius: 20px 0 0 20px; }
+        .right { right: 0; border-radius: 0 20px 20px 0; }
+        .candle { position: absolute; top: -20px; left: 45%; font-size: 24px; }
+        .split .left { transform: translateX(-40px) rotate(-10deg); }
+        .split .right { transform: translateX(40px) rotate(10deg); }
+        .split .candle { display: none; }
+
+        .letter-box { text-align: left; max-height: 250px; overflow-y: auto; padding: 15px; background: white; border-radius: 15px; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+    <div id="scr-auth" class="screen active">
+        <h2>🔒 Identity Check</h2>
+        <p>Confirm the secret code (Our favorite food):</p>
+        <input type="text" id="auth-input" placeholder="Type here...">
+        <button onclick="checkAuth()">Verify</button>
+        <p id="auth-err" style="color:red; display:none; font-size: 12px; margin-top: 10px;">Incorrect. Try again!</p>
+    </div>
+
+    <div id="scr-prank" class="screen">
+        <h2>One Quick Question...</h2>
+        <p>Do you love me? (Be honest! 🙄)</p>
+        <div style="font-size: 60px; margin: 20px;">🧸</div>
+        <div class="btn-group">
+            <button id="yes-btn" onclick="next('scr-hub')">Yes! ❤️</button>
+            <button id="no-btn" onmouseover="moveBtn()" onclick="moveBtn()">No 😤</button>
+        </div>
+    </div>
+
+    <div id="scr-hub" class="screen">
+        <h2>Memory Matrix ✨</h2>
+        <p>Tap a memory to unlock it:</p>
+        <div class="memory-grid">
+            <div class="memory-item" onclick="pop('🍕','Our legendary pizza nights!')">🍕</div>
+            <div class="memory-item" onclick="pop('🎬','Movie marathons & snacks.')">🎬</div>
+            <div class="memory-item" onclick="pop('🚗','The best road trips ever.')">🚗</div>
+            <div class="memory-item" onclick="pop('📚','Exam stress together.')">📚</div>
+            <div class="memory-item" onclick="pop('☕','Endless coffee talks.')">☕</div>
+            <div class="memory-item" onclick="pop('🤝','Partner in crime!')">🤝</div>
+        </div>
+        <button onclick="next('scr-cake')">Continue Celebration 🎂</button>
+    </div>
+
+    <div id="scr-cake" class="screen">
+        <h2>Make a Wish & Cut!</h2>
+        <div class="cake-wrapper" onclick="cutCake()">
+            <div class="candle">🔥</div>
+            <div id="cake-body">
+                <div class="cake-half left"></div>
+                <div class="cake-half right"></div>
+            </div>
+        </div>
+        <p id="cake-hint">Tap the cake to cut it</p>
+        <button id="cake-next" style="display:none;" onclick="next('scr-letter')">Read my letter 💌</button>
+    </div>
+
+    <div id="scr-letter" class="screen">
+        <h2>Happy Birthday! 🎈</h2>
+        <div class="letter-box">
+            <p>Hey Bestie,</p>
+            <p>I built this for you because I wanted to show you what I've been learning. You're the best person to test my logic on!</p>
+            <p>I hope your day is as amazing as you are. Cheers to more bugs, more coffee, and more memories.</p>
+            <p style="text-align: right; font-family: 'Dancing Script'; font-size: 24px;">Always,<br>Your Best Friend</p>
+        </div>
+        <button onclick="location.reload()">Restart Protocol</button>
+    </div>
+
+    <div id="modal" class="modal" onclick="closePop()">
+        <div class="modal-content">
+            <span class="close-modal">X</span>
+            <div id="modal-icon" style="font-size: 80px;"></div>
+            <p id="modal-text"></p>
+        </div>
+    </div>
+
+    <script>
+        // NAVIGATION
+        function next(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        // AUTH
+        function checkAuth() {
+            const val = document.getElementById('auth-input').value.trim().toLowerCase();
+            if(val === 'pizza' || val === 'test') next('scr-prank');
+            else document.getElementById('auth-err').style.display = 'block';
+        }
+
+        // PRANK MOVE
+        function moveBtn() {
+            const btn = document.getElementById('no-btn');
+            const x = Math.random() * 160 - 80;
+            const y = Math.random() * 160 - 80;
+            btn.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        // MEMORY POPUP
+        function pop(icon, text) {
+            document.getElementById('modal-icon').innerText = icon;
+            document.getElementById('modal-text').innerText = text;
+            document.getElementById('modal').style.display = 'flex';
+        }
+        function closePop() { document.getElementById('modal').style.display = 'none'; }
+
+        // CAKE & CONFETTI
+        function cutCake() {
+            document.getElementById('cake-body').classList.add('split');
+            document.getElementById('cake-hint').innerHTML = "🍰 <strong>Wish made!</strong>";
+            document.getElementById('cake-next').style.display = 'block';
+            
+            confetti({
+                particleCount: 150,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+        }
+    </script>
+</body>
+</html>
